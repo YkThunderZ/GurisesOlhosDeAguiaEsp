@@ -115,7 +115,7 @@ local function createVisualForCharacter(character, player)
     nameLabel.Position = UDim2.new(0, 0, 0, 0)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 13
+    nameLabel.TextSize = 10
     nameLabel.TextColor3 = State.ESP.Color
     nameLabel.TextStrokeTransparency = 0
     nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -141,7 +141,7 @@ local function createVisualForCharacter(character, player)
     distanceLabel.Position = UDim2.new(0, 0, 0.66, 0)
     distanceLabel.BackgroundTransparency = 1
     distanceLabel.Font = Enum.Font.Gotham
-    distanceLabel.TextSize = 12
+    distanceLabel.TextSize = 10
     distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     distanceLabel.TextStrokeTransparency = 0
     distanceLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
