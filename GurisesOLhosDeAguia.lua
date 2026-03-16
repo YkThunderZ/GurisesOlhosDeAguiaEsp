@@ -31,13 +31,13 @@ local State = {
         Name = true,
         Health = true,
         Distance = true,
-        Range = 10000,
+        Range = 2000,
         Color = Color3.fromRGB(255, 170, 60),
         Thickness = 2,
         TeamColor = false,
         ShowEnemies = true,
         ShowTeam = false,
-        Transparency = 0.7,
+        Transparency = 1,
         ShowLookLine = true,
         LookLineLength = 15
     },
@@ -496,7 +496,7 @@ do
         State.ESP.Range = math.floor(v) 
     end)
     y = y + 36
-    makeSlider(espPage, y, "Transparency", 0, 1, State.ESP.Transparency, function(v) 
+    makeSlider(espPage, y, "Transparency", 0.1, 2, State.ESP.Transparency, function(v) 
         State.ESP.Transparency = v 
     end)
     y = y + 36
@@ -544,7 +544,7 @@ do
     for i, c in ipairs(presetColors) do
         local sw = create("TextButton", {
             Parent = espPage, 
-            Position = UDim2.new(0, x, 0, y-6), 
+            Position = UDim2.new(0, x, 0, y-11), 
             Size = UDim2.new(0, 28, 0, 28), 
             BackgroundColor3 = c, 
             Text = ""
@@ -865,18 +865,23 @@ local function updateVisual(character)
     if humanoid then
         data.HealthLabel.Visible = State.ESP.Health
 
-        local function updateHealth()
-            local healthPercent = humanoid.Health / humanoid.MaxHealth
+        local health = humanoid.Health
+        local maxHealth = humanoid.MaxHealth
+
+        -- inicializa se não existir
+        if data.LastHealth == nil then
+            data.LastHealth = -1
+        end
+
+        if health ~= data.LastHealth then
+            local healthPercent = health / maxHealth
             local healthColor = Color3.new(1 - healthPercent, healthPercent, 0)
 
             data.HealthLabel.TextColor3 = healthColor
-            data.HealthLabel.Text = "HP: " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+            data.HealthLabel.Text = "HP: " .. math.floor(health) .. "/" .. math.floor(maxHealth)
+
+            data.LastHealth = health
         end
-
-        updateHealth()
-
-        humanoid.HealthChanged:Connect(updateHealth)
-
     else
         data.HealthLabel.Visible = false
     end
@@ -969,90 +974,6 @@ updateConnection = RunService.Heartbeat:Connect(function()
         warn("ESP Update Error: " .. tostring(error))
     end
 end)
--- Keyboard shortcuts
-local UserInputService = game:GetService("UserInputService")
-
-local holdingL = false
-local holdingK = false
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-
-	-- MENU (K)
-	if input.KeyCode == Enum.KeyCode.K then
-		
-		-- se o menu estiver aberto, fecha imediatamente
-		if Config.Visible then
-			Config.Visible = false
-			main.Visible = false
-			return
-		end
-
-		-- se estiver fechado precisa segurar
-		holdingK = true
-
-		task.spawn(function()
-			task.wait(2)
-			if holdingK then
-				Config.Visible = true
-				main.Visible = true
-			end
-		end)
-
-	-- ESP (L)
-	elseif input.KeyCode == Enum.KeyCode.L then
-		holdingL = true
-
-		task.spawn(function()
-			task.wait(2)
-			if holdingL then
-				State.ESP.Enabled = not State.ESP.Enabled
-				State.ESP.ShowEnemies = State.ESP.Enabled
-				State.ESP.ShowTeam = State.ESP.Enabled
-				State.ESP.Glow = State.ESP.Enabled
-				State.ESP.ShowLookLine = State.ESP.Enabled
-
-				createNotification(
-					"ESP ".. (State.ESP.Enabled and "Ativado" or "Desativado"),
-					"Segure L por 5 segundos"
-				)
-
-			end
-		end)
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.KeyCode == Enum.KeyCode.L then
-		holdingL = false
-	elseif input.KeyCode == Enum.KeyCode.K then
-		holdingK = false
-	end
-end)
-
--- Cleanup on script end
-game:GetService("Players").PlayerRemoving:Connect(function(player)
-    if player == LocalPlayer then
-        if updateConnection then
-            updateConnection:Disconnect()
-        end
-        for character, _ in pairs(State.TrackedCharacters) do
-            cleanupESP(character)
-        end
-    end
-end)
-
--- Auto-reconnect if LocalPlayer changes
-Players:GetPropertyChangedSignal("LocalPlayer"):Connect(function()
-    LocalPlayer = Players.LocalPlayer
-    if not LocalPlayer then return end
-    
-    -- Re-parent the GUI
-    if screenGui then
-        screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    end
-end)
-
 -- Create notification
 local function createNotification(title, message)
     local notif = create("Frame", {
@@ -1106,9 +1027,77 @@ local function createNotification(title, message)
     notif:Destroy()
 end
 
+local UserInputService = game:GetService("UserInputService")
+
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+
+	-- MENU (K)
+	if input.KeyCode == Enum.KeyCode.K then
+		
+		-- se o menu estiver aberto, fecha imediatamente
+		if Config.Visible then
+			Config.Visible = false
+			main.Visible = false
+        else 
+            Config.Visible = true
+            main.Visible = true
+		end
+
+		
+		
+    end
+	-- ESP (L)
+	if input.KeyCode == Enum.KeyCode.L then
+		
+
+		
+            State.ESP.Enabled = not State.ESP.Enabled
+            State.ESP.ShowEnemies = State.ESP.Enabled
+            State.ESP.ShowTeam = State.ESP.Enabled
+            State.ESP.Glow = State.ESP.Enabled
+            State.ESP.ShowLookLine = State.ESP.Enabled
+            coroutine.wrap(function()
+                wait(1)
+                createNotification(
+                    "ESP ".. (State.ESP.Enabled and "Ativado" or "Desativado"),
+                    "Segure L por 5 segundos"
+                )
+            end)
+			
+	end
+end)
+
+
+
+-- Cleanup on script end
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    if player == LocalPlayer then
+        if updateConnection then
+            updateConnection:Disconnect()
+        end
+        for character, _ in pairs(State.TrackedCharacters) do
+            cleanupESP(character)
+        end
+    end
+end)
+
+-- Auto-reconnect if LocalPlayer changes
+Players:GetPropertyChangedSignal("LocalPlayer"):Connect(function()
+    LocalPlayer = Players.LocalPlayer
+    if not LocalPlayer then return end
+    
+    -- Re-parent the GUI
+    if screenGui then
+        screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    end
+end)
+
+
+
 -- Show startup notification
 coroutine.wrap(function()
     wait(1)
     createNotification("ESP Loaded", "Controles: K - Fechar menu (Segure 5 segundos para abrir!), L - Ativar/Desativar tudo (Segure 5 segundos)")
 end)()
-
